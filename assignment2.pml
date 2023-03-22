@@ -3,21 +3,51 @@
  * Set up for one elevator and two floors.
  */
 
-// LTL formulas to be verified
-//ltl p1 { []<> (floor_request_made[1]==true) } /* this property does not hold, as a request for floor 1 can be indefinitely postponed. */
-//ltl p2 { []<> (cabin_door_is_open==true) } /* this property should hold, but does not yet; at any moment during an execution, the opening of the cabin door will happen at some later point. */
-//ltl a1 { [](floor_request_made[1] -> <>current_floor == 1)}
-//ltl a2 { [](floor_request_made[2] -> <>current_floor == 2)}
-//ltl b1 { []<>(cabin_door_is_open == true)}
-ltl b2 { []<>(cabin_door_is_open == false)}
-//ltl c  { [](cabin_door_is_open == true -> floor_door_is_open[current_floor] == true)}
-
 //-------------------------------------------------------------------------------------------------
 /** the number of floors */
 #define NUMBER_OF_FLOORS 2
 
 /** IDs of request button processes */
 #define REQUEST_BUTTON_ID (_pid - 4)
+
+//-------------------------------------------------------------------------------------------------
+
+// LTL formulas to be verified
+/** 
+ * this property does not hold, as a request for floor 1 can be indefinitely postponed.
+ */
+//ltl p1 { []<> (floor_request_made[0]==true) } 
+
+/**
+ * this property should hold, but does not yet; at any moment during an execution, the opening of
+ * the cabin door will happen at some later point.
+ */
+//ltl p2 { []<> (cabin_door_is_open==true) } 
+
+/**
+ * When a request is made at floor 1, then eventually the elevator reaches floor 1.
+ */
+//ltl a1 { [](floor_request_made[0] -> <>current_floor == 0)}
+
+/**
+ * When a request is made at floor 2, then eventually the elevator reaches floor 2.
+ */
+//ltl a2 { [](floor_request_made[1] -> <>current_floor == 1)}
+
+/**
+ * always eventuall the cabin doors open.
+ */
+//ltl b1 { []<>(cabin_door_is_open == true)}
+
+/**
+ * always eventuall the cabin doors close.
+ */
+ltl b2 { []<>(cabin_door_is_open == false)}
+
+/**
+ * if the cabin door is open, then the doors at the current floor are also open
+ */
+//ltl c  { [](cabin_door_is_open == true -> floor_door_is_open[current_floor] == true)}
 
 //-------------------------------------------------------------------------------------------------
 /**
@@ -58,7 +88,7 @@ chan update_cabin_door = [0] of { bool };
 chan cabin_door_updated = [0] of { bool };
 
 // status and synchronous channels for elevator cabin and engine
-byte current_floor;
+byte current_floor = 0;
 chan move = [0] of { bool };
 chan floor_reached = [0] of { bool };
 
@@ -115,32 +145,26 @@ active proctype main_control() {
             update_cabin_door!false;
             cabin_door_updated?false;
 
+            // ! THIS PART IS JANKY, and we PROMISE there was no other way of doing this:
             do // This is the only way of making a sort of function that allows for an early return
             :: true -> {
-                    bool DESTINATION_IS_BELOW = (current_floor > destination)
-                    bool DESTINATION_IS_ABOVE = (current_floor < destination)
+                    
+                    bool DESTINATION_IS_BELOW = (current_floor > destination);
+                    bool DESTINATION_IS_ABOVE = (current_floor < destination);
                     if 
-                    :: DESTINATION_IS_BELOW -> { 
-                            move!true;
-                            direction = down;
-                        }
-                    :: DESTINATION_IS_ABOVE -> {
-                            move!true; 
-                            direction = up;
-                        }
-                    :: else -> {
-                            break; // early return of the "function"
-                        }
+                    :: DESTINATION_IS_BELOW -> direction = down;
+                    :: DESTINATION_IS_ABOVE -> direction = up;
+                    :: else -> break; // ! "early return" of the "function"
                     fi;
 
-                    do
+                    move!true;
+
+                    do 
                     :: current_floor > destination -> {
-                            move!true;
                             floor_reached?true;
                             current_floor--;
                         }
                     :: current_floor < destination -> {
-                            move!true;
                             floor_reached?true;
                             current_floor++;
                         } 
@@ -151,16 +175,22 @@ active proctype main_control() {
                         }
                     od;
 
-                    // end of "function" thus we return.
-                    break;
+                    break; // end of "function" thus we "return".
                 }
             od;
 
             update_cabin_door!true;
             cabin_door_updated?true;
 
-            // an example assertion.
-            assert(0 <= current_floor && current_floor < NUMBER_OF_FLOORS);
+            atomic { // an example assertion.
+                bool NON_NEGATIVE_CURRENT_FLOOR = (0 <= current_floor);
+                bool CABIN_NOT_ABOVE_EXISTING_FLOORS = (current_floor < NUMBER_OF_FLOORS);
+                bool CURRENT_FLOOR_WITHIN_BOUNDS = (
+                    NON_NEGATIVE_CURRENT_FLOOR && CABIN_NOT_ABOVE_EXISTING_FLOORS
+                );
+                assert(CURRENT_FLOOR_WITHIN_BOUNDS);
+            }
+
 
             floor_request_made[destination] = false;
             served!true;
@@ -190,7 +220,7 @@ active [NUMBER_OF_FLOORS] proctype req_button() {
 	do
 	:: !floor_request_made[REQUEST_BUTTON_ID] -> {
 			atomic {
-				//TODO: Ask Rick about arrays
+				// TODO : Ask Rick about arrays
 				assert(0 <= REQUEST_BUTTON_ID && REQUEST_BUTTON_ID < NUMBER_OF_FLOORS);
 				request!REQUEST_BUTTON_ID;
 				floor_request_made[REQUEST_BUTTON_ID] = true;
