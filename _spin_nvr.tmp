@@ -1,0 +1,11 @@
+never b2 {    /* !([] (<> ((cabin_door_is_open==0)))) */
+T0_init:
+	do
+	:: (! (((cabin_door_is_open==0)))) -> goto accept_S4
+	:: (1) -> goto T0_init
+	od;
+accept_S4:
+	do
+	:: (! (((cabin_door_is_open==0)))) -> goto accept_S4
+	od;
+}
