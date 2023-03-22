@@ -11,8 +11,7 @@
 //ltl b1 { []<>(cabin_door_is_open == true)}
 ltl b2 { []<>(cabin_door_is_open == false)}
 //ltl c  { [](cabin_door_is_open == true -> floor_door_is_open[current_floor] == true)}
-// the number of floors
-#define N	2
+
 //-------------------------------------------------------------------------------------------------
 /** the number of floors */
 #define NUMBER_OF_FLOORS 2
@@ -155,13 +154,13 @@ active proctype main_control() {
                     // end of "function" thus we return.
                     break;
                 }
-            do;
+            od;
 
             update_cabin_door!true;
             cabin_door_updated?true;
 
             // an example assertion.
-            assert(0 <= current_floor && current_floor < N);
+            assert(0 <= current_floor && current_floor < NUMBER_OF_FLOORS);
 
             floor_request_made[destination] = false;
             served!true;
@@ -186,15 +185,16 @@ active proctype req_handler() {
 /**
  * request button associated to a floor i to request an elevator
  */
-active [N] proctype req_button() {
+active [NUMBER_OF_FLOORS] proctype req_button() {
 
 	do
-	:: !floor_request_made[reqid] ->
-	   atomic {
-		//TODO: Ask Rick about arrays
-		assert(0 <= reqid && reqid < N);
-		request!reqid;
-		floor_request_made[reqid] = true;
-	   }
+	:: !floor_request_made[REQUEST_BUTTON_ID] -> {
+			atomic {
+				//TODO: Ask Rick about arrays
+				assert(0 <= REQUEST_BUTTON_ID && REQUEST_BUTTON_ID < NUMBER_OF_FLOORS);
+				request!REQUEST_BUTTON_ID;
+				floor_request_made[REQUEST_BUTTON_ID] = true;
+			}
+		}
 	od;
 }
