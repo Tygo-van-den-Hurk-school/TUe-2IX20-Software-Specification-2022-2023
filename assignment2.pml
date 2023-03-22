@@ -6,12 +6,11 @@
 // LTL formulas to be verified
 //ltl p1 { []<> (floor_request_made[1]==true) } /* this property does not hold, as a request for floor 1 can be indefinitely postponed. */
 //ltl p2 { []<> (cabin_door_is_open==true) } /* this property should hold, but does not yet; at any moment during an execution, the opening of the cabin door will happen at some later point. */
-ltl a1 { [](floor_request_made[1] -> <>current_floor == 1)}
-ltl a2 { [](floor_request_made[2] -> <>current_floor == 2)}
-ltl b1 { []<>(cabin_door_is_open == true)}
-ltl b2 { []<>(cabin_door_is_open == false)}
+//ltl a1 { [](floor_request_made[1] -> <>current_floor == 1)}
+//ltl a2 { [](floor_request_made[2] -> <>current_floor == 2)}
+//ltl b1 { []<>(cabin_door_is_open == true)}
+//ltl b2 { []<>(cabin_door_is_open == false)}
 ltl c  { [](cabin_door_is_open == true -> floor_door_is_open[current_floor] == true)}
-ltl d  { []}
 // the number of floors
 #define N	2
 
