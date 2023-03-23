@@ -5,7 +5,7 @@
 
 //-------------------------------------------------------------------------------------------------
 /** the number of floors */
-#define NUMBER_OF_FLOORS 2
+#define NUMBER_OF_FLOORS 4
 
 /** IDs of request button processes */
 #define REQUEST_BUTTON_ID (_pid - 4)
@@ -16,7 +16,7 @@
 /** 
  * this property does not hold, as a request for floor 1 can be indefinitely postponed.
  */
-//ltl p1 { []<> (floor_request_made[0]==true) } 
+//ltl p1 { []<> (floor_request_made[1]==true) } 
 
 /**
  * this property should hold, but does not yet; at any moment during an execution, the opening of
@@ -27,12 +27,12 @@
 /**
  * When a request is made at floor 1, then eventually the elevator reaches floor 1.
  */
-//ltl a1 { [](floor_request_made[0] -> <>current_floor == 0)}
+//ltl a1 { [](floor_request_made[1] -> <>current_floor == 1)}
 
 /**
  * When a request is made at floor 2, then eventually the elevator reaches floor 2.
  */
-//ltl a2 { [](floor_request_made[1] -> <>current_floor == 1)}
+//ltl a2 { [](floor_request_made[2] -> <>current_floor == 2)}
 
 /**
  * always eventuall the cabin doors open.
@@ -50,22 +50,7 @@ ltl b2 { []<>(cabin_door_is_open == false)}
 //ltl c  { [](cabin_door_is_open == true -> floor_door_is_open[current_floor] == true)}
 
 //-------------------------------------------------------------------------------------------------
-/**
- * this property does not hold, as a request for floor 1 can be indefinitely postponed.
- *
- * TODO uncomment when ready to verify
- */
-// ltl p1 { []<> (floor_request_made[1]==true) } 
 
-/**
- * this property should hold, but does not yet; at any moment during an execution,
- * the opening of the cabin door will happen at some later point.
- *
- * TODO uncomment when ready to verify
- */
-// ltl p2 { []<> (cabin_door_is_open==true) } 
-
-//-------------------------------------------------------------------------------------------------
 /** type for direction of elevator */
 mtype { down, up, none };
 
