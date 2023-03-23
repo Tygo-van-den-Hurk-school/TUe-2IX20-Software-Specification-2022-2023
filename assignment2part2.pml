@@ -42,7 +42,7 @@
 /**
  * always eventuall the cabin doors close.
  */
-ltl b2 { []<>(cabin_door_is_open == false)}
+//ltl b2 { []<>(cabin_door_is_open == false)}
 
 /**
  * if the cabin door is open, then the doors at the current floor are also open
@@ -52,10 +52,13 @@ ltl b2 { []<>(cabin_door_is_open == false)}
 /**
  * When the request button of floor i is pressed, eventually, that request is processed.
  */
+int i
+ltl e { [](floor_request_made[i] -> <>(current_floor == i))}
 
 /**
  * Each elevvator eventually processes a request.
  */
+
 
 /**
  * When an elevator signals that it has processed a request via the 'served' channel, its current floor is equal to the destination floor of the request.
