@@ -14,16 +14,16 @@
 #define CABIN_DOOR_ID (_pid)
 
 /** IDs of the engine processes */
-#define ENGINE_ID (_pid + NUMBER_OF_ELEVATORS)
+#define ENGINE_ID (CABIN_DOOR_ID - NUMBER_OF_ELEVATORS)
 
 /** IDs of the main control processes */
-#define MAIN_CONTROL_ID (ENGINE_ID + NUMBER_OF_ELEVATORS)
+#define MAIN_CONTROL_ID (ENGINE_ID - NUMBER_OF_ELEVATORS)
 
 /** IDs of the main control processes */
-#define REQUEST_HANDELER_ID (MAIN_CONTROL_ID + NUMBER_OF_ELEVATORS)
+#define REQUEST_HANDELER_ID (MAIN_CONTROL_ID - NUMBER_OF_ELEVATORS)
 
 /** IDs of the request button processes */
-#define REQUEST_BUTTON_ID (REQUEST_HANDELER_ID + NUMBER_OF_ELEVATORS)
+#define REQUEST_BUTTON_ID (REQUEST_HANDELER_ID - NUMBER_OF_ELEVATORS)
 
 //-------------------------------------------------------------------------------------------------
 
@@ -73,7 +73,7 @@ ltl b2 { []<>(cabin_door_is_open == false)}
 mtype { down, up, none };
 
 /** asynchronous channel to handle passenger requests */
-chan request = [NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS] of { byte };
+chan request[NUMBER_OF_ELEVATORS] = [NUMBER_OF_FLOORS] of { byte };
 
 /** an array for the status of requests per floor */
 bool floor_request_made[NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS];
@@ -85,10 +85,10 @@ bool floor_door_is_open[NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS];
 bool cabin_door_is_open[NUMBER_OF_ELEVATORS];
 
 /** if true the cabin door controler will open the cabin door */
-chan update_cabin_door = [0] of { bool };
+chan update_cabin_door[NUMBER_OF_ELEVATORS] = [0] of { bool };
 
 /** if true the cabin door has been opened */
-chan cabin_door_updated = [0] of { bool };
+chan cabin_door_updated[NUMBER_OF_ELEVATORS] = [0] of { bool };
 
 // status and synchronous channels for elevator cabin and engine
 byte current_floor[NUMBER_OF_ELEVATORS] = 0;
@@ -96,8 +96,8 @@ chan move[NUMBER_OF_ELEVATORS] = [0] of { bool };
 chan floor_reached[NUMBER_OF_ELEVATORS] = [0] of { bool };
 
 // synchronous channels for communication between request handler and main control
-chan go_to = [0] of { byte };
-chan served = [0] of { bool };
+chan go_to[NUMBER_OF_ELEVATORS] = [0] of { byte };
+chan served[NUMBER_OF_ELEVATORS] = [0] of { bool };
 
 //-------------------------------------------------------------------------------------------------
 /**
