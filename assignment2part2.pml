@@ -28,9 +28,7 @@
 //-------------------------------------------------------------------------------------------------
 
 // LTL formulas to be verified
-/** 
- * this property does not hold, as a request for floor 1 can be indefinitely postponed.
- */
+/** this property does not hold, as a request for floor 1 can be indefinitely postponed.*/
 //ltl p1 { []<> (floor_request_made[0]==true) } 
 
 /**
@@ -39,63 +37,52 @@
  */
 //ltl p2 { []<> (cabin_door_is_open==true) } 
 
-/**
- * When a request is made at floor 1, then eventually the elevator reaches floor 1.
- */
+/** When a request is made at floor 1, then eventually the elevator reaches floor 1.*/
 //ltl a1 { [](floor_request_made[0] -> <>current_floor == 0)}
 
-/**
- * When a request is made at floor 2, then eventually the elevator reaches floor 2.
- */
+/** When a request is made at floor 2, then eventually the elevator reaches floor 2.*/
 //ltl a2 { [](floor_request_made[1] -> <>current_floor == 1)}
 
-/**
- * always eventuall the cabin doors open.
- */
+/** Always eventually the cabin doors open.*/
 //ltl b1 { []<>(cabin_door_is_open == true)}
 
-/**
- * always eventuall the cabin doors close.
- */
+/** Always eventuall the cabin doors close.*/
 ltl b2 { []<>(cabin_door_is_open == false)}
 
-/**
- * if the cabin door is open, then the doors at the current floor are also open
- */
+/** if the cabin door is open, then the doors at the current floor are also open. */
 //ltl c  { [](cabin_door_is_open == true -> floor_door_is_open[current_floor] == true)}
 
-/**
- * When the request button of floor i is pressed, eventually, that request is processed.
- */
+/** When the request button of floor i is pressed, eventually, that request is processed. */
+// ltl
 
-/**
- * Each elevvator eventually processes a request.
- */
+/** Each elevvator eventually processes a request. */
+// ltl
 
 /**
  * When an elevator signals that it has processed a request via the 'served' channel, its current
  * floor is equal to the destination floor of the request.
  */
+// ltl
 
-/**
- * Eventually a request is made at floor number N-1
- */
+/** Eventually a request is made at floor number N-1. */
+// ltl
+
 //-------------------------------------------------------------------------------------------------
 
 /** type for direction of elevator */
 mtype { down, up, none };
 
 /** asynchronous channel to handle passenger requests */
-chan request = [NUMBER_OF_FLOORS] of { byte };
+chan request = [NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS] of { byte };
 
 /** an array for the status of requests per floor */
-bool floor_request_made[NUMBER_OF_FLOORS];
+bool floor_request_made[NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS];
 
 /** status of floor doors of the shaft of the single elevator */
-bool floor_door_is_open[NUMBER_OF_FLOORS];
+bool floor_door_is_open[NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS];
 
 /** wether or not the cabin door is open */
-bool cabin_door_is_open;
+bool cabin_door_is_open[NUMBER_OF_ELEVATORS];
 
 /** if true the cabin door controler will open the cabin door */
 chan update_cabin_door = [0] of { bool };
@@ -104,9 +91,9 @@ chan update_cabin_door = [0] of { bool };
 chan cabin_door_updated = [0] of { bool };
 
 // status and synchronous channels for elevator cabin and engine
-byte current_floor = 0;
-chan move = [0] of { bool };
-chan floor_reached = [0] of { bool };
+byte current_floor[NUMBER_OF_ELEVATORS] = 0;
+chan move[NUMBER_OF_ELEVATORS] = [0] of { bool };
+chan floor_reached[NUMBER_OF_ELEVATORS] = [0] of { bool };
 
 // synchronous channels for communication between request handler and main control
 chan go_to = [0] of { byte };
