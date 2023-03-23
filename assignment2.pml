@@ -162,7 +162,7 @@ active proctype main_control() {
                         }
                     od;
 
-                    break; // end of "function" thus we "return".
+                    break; // ! end of "function" thus we "return".
                 }
             od;
 

@@ -5,10 +5,25 @@
 
 //-------------------------------------------------------------------------------------------------
 /** the number of floors */
-#define NUMBER_OF_FLOORS 2
+#define NUMBER_OF_FLOORS 4
 
-/** IDs of request button processes */
-#define REQUEST_BUTTON_ID (_pid - 4)
+/** the number of elevators */
+#define NUMBER_OF_ELEVATORS 4
+
+/** IDs of the cabin door processes */
+#define CABIN_DOOR_ID (_pid)
+
+/** IDs of the engine processes */
+#define ENGINE_ID (_pid + NUMBER_OF_ELEVATORS)
+
+/** IDs of the main control processes */
+#define MAIN_CONTROL_ID (ENGINE_ID + NUMBER_OF_ELEVATORS)
+
+/** IDs of the main control processes */
+#define REQUEST_HANDELER_ID (MAIN_CONTROL_ID + NUMBER_OF_ELEVATORS)
+
+/** IDs of the request button processes */
+#define REQUEST_BUTTON_ID (REQUEST_HANDELER_ID + NUMBER_OF_ELEVATORS)
 
 //-------------------------------------------------------------------------------------------------
 
@@ -61,7 +76,8 @@ ltl e { [](floor_request_made[i] -> <>(current_floor == i))}
 
 
 /**
- * When an elevator signals that it has processed a request via the 'served' channel, its current floor is equal to the destination floor of the request.
+ * When an elevator signals that it has processed a request via the 'served' channel, its current
+ * floor is equal to the destination floor of the request.
  */
 
 /**
@@ -104,7 +120,7 @@ chan served = [0] of { bool };
  * cabin door process. Opens the door if update cabin door is true
  * on the channle update_cabin_door.
  */
-active proctype cabin_door() {
+active [NUMBER_OF_ELEVATORS] proctype cabin_door() {
 
 	do
 	:: update_cabin_door?true -> {
@@ -123,7 +139,7 @@ active proctype cabin_door() {
 /*
  * process combining the elevator engine and sensors
  */
-active proctype elevator_engine() {
+active [NUMBER_OF_ELEVATORS] proctype elevator_engine() {
 
 	do
 	:: move?true -> {
@@ -138,7 +154,7 @@ active proctype elevator_engine() {
 /**
  * DUMMY main control process. Remodel it to control the doors and the engine!
  */ 
-active proctype main_control() {
+active [NUMBER_OF_ELEVATORS] proctype main_control() {
 
 	byte destination; 
 	mtype direction;
@@ -180,7 +196,7 @@ active proctype main_control() {
                         }
                     od;
 
-                    break; // end of "function" thus we "return".
+                    break; // ! end of "function" thus we "return".
                 }
             od;
 
@@ -206,7 +222,7 @@ active proctype main_control() {
 /**
  * request handler process. Remodel this process to serve M elevators!
  */
-active proctype req_handler() {
+active [NUMBER_OF_ELEVATORS] proctype req_handler() {
 
 	byte destination;
 	do
@@ -220,12 +236,11 @@ active proctype req_handler() {
 /**
  * request button associated to a floor i to request an elevator
  */
-active [NUMBER_OF_FLOORS] proctype req_button() {
+active [NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS] proctype req_button() {
 
 	do
 	:: !floor_request_made[REQUEST_BUTTON_ID] -> {
 			atomic {
-				// TODO : Ask Rick about arrays
 				assert(0 <= REQUEST_BUTTON_ID && REQUEST_BUTTON_ID < NUMBER_OF_FLOORS);
 				request!REQUEST_BUTTON_ID;
 				floor_request_made[REQUEST_BUTTON_ID] = true;
