@@ -151,12 +151,12 @@ active [NUMBER_OF_ELEVATORS] proctype elevator_engine() {
  */ 
 active [NUMBER_OF_ELEVATORS] proctype main_control() {
     
-    // makes it known that the elevator is avalible
-    served[ELEVATOR_SHAFT]!true; 
-    
     int ELEVATOR_SHAFT = MAIN_CONTROL_ID
     bool used = flase;
-    
+        
+    // makes it known that the elevator is avalible
+    served[ELEVATOR_SHAFT]!true; 
+
 	byte destination; 
 	mtype direction;
 	do
