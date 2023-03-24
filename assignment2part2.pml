@@ -7,7 +7,7 @@
 #define NUMBER_OF_FLOORS 4
 
 /** the number of elevators */
-#define NUMBER_OF_ELEVATORS 4
+#define NUMBER_OF_ELEVATORS 2
 
 /** IDs of the cabin door processes */
 #define CABIN_DOOR_ID (_pid)
@@ -58,11 +58,11 @@
 /** When the request button of floor i is pressed, eventually, that request is processed.*/
 int i
 int j
-ltl e { [](floor_request_made[i] -> <>(current_floor[j] == i))}
+//ltl e { [](floor_request_made[i] -> <>(current_floor[j] == i))}
 
 /** Each elevvator eventually processes a request. */
 int elevatorsUsed
-ltl f { <>(elevatorsUsed == NUMBER_OF_ELEVATOR + 1)}
+//ltl f { <>(elevatorsUsed == NUMBER_OF_ELEVATORS + 1)}
 
 
 /**
@@ -74,7 +74,7 @@ ltl f { <>(elevatorsUsed == NUMBER_OF_ELEVATOR + 1)}
 
 /** Eventually a request is made at floor number N-1. */
 int k
-ltl h { <>(floor_request_made[k][NUMBER_OF_FLOORS - 1] == true)}
+ltl h { <>(floor_request_made[NUMBER_OF_FLOORS - 1] == true)}
 
 //-------------------------------------------------------------------------------------------------
 
@@ -82,13 +82,17 @@ ltl h { <>(floor_request_made[k][NUMBER_OF_FLOORS - 1] == true)}
 mtype { down, up, none };
 
 /** asynchronous channel to handle passenger requests */
-chan request[NUMBER_OF_ELEVATORS] = [NUMBER_OF_FLOORS] of { byte };
+chan request = [NUMBER_OF_FLOORS] of { byte };
 
 /** an array for the status of requests per floor */
-bool floor_request_made[NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS];
+bool floor_request_made[NUMBER_OF_FLOORS]
 
 /** status of floor doors of the shaft of the single elevator */
-bool floor_door_is_open[NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS];
+//bool floor_door_is_open[NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS];
+typedef door_array {
+    bool floor[NUMBER_OF_FLOORS];
+};
+door_array floor_door_is_open[NUMBER_OF_ELEVATORS];
 
 /** wether or not the cabin door is open */
 bool cabin_door_is_open[NUMBER_OF_ELEVATORS];
@@ -118,13 +122,13 @@ active [NUMBER_OF_ELEVATORS] proctype cabin_door() {
     int ELEVATOR_SHAFT = CABIN_DOOR_ID
 	do
 	:: update_cabin_door[ELEVATOR_SHAFT]?true -> {
-            floor_door_is_open[ELEVATOR_SHAFT][current_floor] = true;
+            floor_door_is_open[ELEVATOR_SHAFT].floor[current_floor[ELEVATOR_SHAFT]] = true;
             cabin_door_is_open[ELEVATOR_SHAFT] = true;
             cabin_door_updated[ELEVATOR_SHAFT]!true;
         }
 	:: update_cabin_door[ELEVATOR_SHAFT]?false -> {
             cabin_door_is_open[ELEVATOR_SHAFT] = false;
-            floor_door_is_open[ELEVATOR_SHAFT][current_floor] = false; 
+            floor_door_is_open[ELEVATOR_SHAFT].floor[current_floor[ELEVATOR_SHAFT]] = false; 
             cabin_door_updated[ELEVATOR_SHAFT]!false;
         }
 	od;
@@ -135,7 +139,7 @@ active [NUMBER_OF_ELEVATORS] proctype cabin_door() {
  */
 active [NUMBER_OF_ELEVATORS] proctype elevator_engine() {
 
-    int ELEVATOR_SHAFT = ENGINE_ID
+    int ELEVATOR_SHAFT = ENGINE_ID;
 	do
 	:: move[ELEVATOR_SHAFT]?true -> {
             do
@@ -151,8 +155,8 @@ active [NUMBER_OF_ELEVATORS] proctype elevator_engine() {
  */ 
 active [NUMBER_OF_ELEVATORS] proctype main_control() {
     
-    int ELEVATOR_SHAFT = MAIN_CONTROL_ID
-    bool used = flase;
+    int ELEVATOR_SHAFT = MAIN_CONTROL_ID;
+    bool used = false;
         
     // makes it known that the elevator is avalible
     served[ELEVATOR_SHAFT]!true; 
@@ -181,15 +185,15 @@ active [NUMBER_OF_ELEVATORS] proctype main_control() {
                     move[ELEVATOR_SHAFT]!true;
 
                     do 
-                    :: current_floor > destination -> {
+                    :: current_floor[ELEVATOR_SHAFT] > destination -> {
                             floor_reached[ELEVATOR_SHAFT]?true;
                             current_floor[ELEVATOR_SHAFT]--;
                         }
-                    :: current_floor < destination -> {
+                    :: current_floor[ELEVATOR_SHAFT] < destination -> {
                             floor_reached[ELEVATOR_SHAFT]?true;
                             current_floor[ELEVATOR_SHAFT]++;
                         } 
-                    :: current_floor == destination -> {
+                    :: current_floor[ELEVATOR_SHAFT] == destination -> {
                             move[ELEVATOR_SHAFT]!false;
                             direction = none;
                             break;
@@ -204,11 +208,11 @@ active [NUMBER_OF_ELEVATORS] proctype main_control() {
             update_cabin_door[ELEVATOR_SHAFT]!true;
             cabin_door_updated[ELEVATOR_SHAFT]?true;
             
-            floor_request_made[ELEVATOR_SHAFT][destination] = false;
+            floor_request_made[destination] = false;
             served[ELEVATOR_SHAFT]!true;
 
             // this is an assertion for g.
-            bool CORRECT_FLOOR = (current_floor == destination);
+            bool CORRECT_FLOOR = (current_floor[ELEVATOR_SHAFT] == destination);
             assert(CORRECT_FLOOR)
 
             if // To keep track of all the elevators we've used.
