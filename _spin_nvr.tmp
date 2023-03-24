@@ -1,11 +1,7 @@
-never b2 {    /* !([] (<> ((cabin_door_is_open==0)))) */
+never h {    /* !(<> ((floor_request_made[(4-1)]==1))) */
+accept_init:
 T0_init:
 	do
-	:: (! (((cabin_door_is_open==0)))) -> goto accept_S4
-	:: (1) -> goto T0_init
-	od;
-accept_S4:
-	do
-	:: (! (((cabin_door_is_open==0)))) -> goto accept_S4
+	:: (! (((floor_request_made[(4-1)]==1)))) -> goto T0_init
 	od;
 }
