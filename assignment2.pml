@@ -130,9 +130,9 @@ active proctype main_control() {
             update_cabin_door!false;
             cabin_door_updated?false;
 
-            // ! THIS PART IS JANKY, and we PROMISE there was no other way of doing this:
+            // ! THIS PART IS JANKY, and we PROMISE there was no other way of doing this nicely:
             do // This is the only way of making a sort of function that allows for an early return
-            :: true -> {
+            :: true -> { // it is just a while true loop that breaks at the end, or earlier
                     
                     bool DESTINATION_IS_BELOW = (current_floor > destination);;
                     bool DESTINATION_IS_ABOVE = (current_floor < destination);;
@@ -188,7 +188,7 @@ active proctype main_control() {
 /**
  * request handler process. Remodel this process to serve M elevators!
  */
-active proctype req_handler() {
+active proctype request_handler() {
 
 	byte destination;
 	do
@@ -202,7 +202,7 @@ active proctype req_handler() {
 /**
  * request button associated to a floor i to request an elevator
  */
-active [NUMBER_OF_FLOORS] proctype req_button() {
+active [NUMBER_OF_FLOORS] proctype request_button() {
 
 	do
 	:: !floor_request_made[REQUEST_BUTTON_ID] -> {
