@@ -143,8 +143,6 @@ active proctype main_control() {
                     fi;
 
                     move!true;
-                    
-                    move!true;
 
                     do 
                     :: current_floor > destination -> {

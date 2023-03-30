@@ -2,7 +2,7 @@
 #define PAN_H
 
 #define SpinVersion	"Spin Version 6.5.1 -- 20 December 2019"
-#define PanSource	"assignment2.pml"
+#define PanSource	"assignment2part2.pml"
 
 #define G_long	8
 #define G_int	4
@@ -139,25 +139,25 @@ typedef struct S_F_MAP {
 	int upto;
 } S_F_MAP;
 
-#define _nstates5	14	/* b2 */
-#define minseq5	96
-#define maxseq5	108
-#define _endstate5	13
+#define _nstates5	7	/* h */
+#define minseq5	106
+#define maxseq5	111
+#define _endstate5	6
 
-#define _nstates4	11	/* req_button */
-#define minseq4	86
-#define maxseq4	95
-#define _endstate4	10
+#define _nstates4	15	/* request_button */
+#define minseq4	92
+#define maxseq4	105
+#define _endstate4	14
 
-#define _nstates3	9	/* req_handler */
-#define minseq3	78
-#define maxseq3	85
-#define _endstate3	8
+#define _nstates3	10	/* request_handler */
+#define minseq3	83
+#define maxseq3	91
+#define _endstate3	9
 
-#define _nstates2	53	/* main_control */
+#define _nstates2	58	/* main_control */
 #define minseq2	26
-#define maxseq2	77
-#define _endstate2	52
+#define maxseq2	82
+#define _endstate2	57
 
 #define _nstates1	13	/* elevator_engine */
 #define minseq1	14
@@ -183,11 +183,11 @@ extern S_F_MAP src_file1[];
 extern S_F_MAP src_file0[];
 
 #define T_ID	unsigned char
-#define _T5	56
-#define _T2	57
+#define _T5	57
+#define _T2	58
 #define WS		8 /* word size in bytes */
-#define SYNC	6
-#define ASYNC	1
+#define SYNC	4
+#define ASYNC	3
 
 #ifndef NCORE
 	#ifdef DUAL_CORE
@@ -199,7 +199,10 @@ extern S_F_MAP src_file0[];
 	#endif
 #endif
 
-typedef struct P5 { /* b2 */
+struct door_array { /* user defined type */
+	uchar floor[4];
+};
+typedef struct P5 { /* h */
 	unsigned _pid : 8;  /* 0..255 */
 	unsigned _t   : 4; /* proctype */
 	unsigned _p   : 7; /* state    */
@@ -209,25 +212,29 @@ typedef struct P5 { /* b2 */
 } P5;
 #define Air5	(sizeof(P5) - 3)
 
-#define Preq_button	((P4 *)_this)
-typedef struct P4 { /* req_button */
+#define Prequest_button	((P4 *)_this)
+typedef struct P4 { /* request_button */
 	unsigned _pid : 8;  /* 0..255 */
 	unsigned _t   : 4; /* proctype */
 	unsigned _p   : 7; /* state    */
 #ifdef HAS_PRIORITY
 	unsigned _priority : 8; /* 0..255 */
 #endif
+	unsigned _14_6_3_NON_NEGATIVE_CURRENT_FLOOR : 1;
+	unsigned _14_6_3_NOT_TOO_HIGH_CURRENT_FLOOR : 1;
+	unsigned _14_6_3_CURRENT_FLOOR_WITHIN_BOUNDS : 1;
 } P4;
 #define Air4	(sizeof(P4) - 3)
 
-#define Preq_handler	((P3 *)_this)
-typedef struct P3 { /* req_handler */
+#define Prequest_handler	((P3 *)_this)
+typedef struct P3 { /* request_handler */
 	unsigned _pid : 8;  /* 0..255 */
 	unsigned _t   : 4; /* proctype */
 	unsigned _p   : 7; /* state    */
 #ifdef HAS_PRIORITY
 	unsigned _priority : 8; /* 0..255 */
 #endif
+	uchar nextElevatorID;
 	uchar destination;
 } P3;
 #define Air3	(sizeof(P3) - Offsetof(P3, destination) - 1*sizeof(uchar))
@@ -240,12 +247,15 @@ typedef struct P2 { /* main_control */
 #ifdef HAS_PRIORITY
 	unsigned _priority : 8; /* 0..255 */
 #endif
-	unsigned _11_4_1_DESTINATION_IS_BELOW : 1;
-	unsigned _11_4_1_DESTINATION_IS_ABOVE : 1;
+	unsigned used : 1;
+	unsigned _12_4_1_DESTINATION_IS_BELOW : 1;
+	unsigned _12_4_1_DESTINATION_IS_ABOVE : 1;
+	unsigned _12_4_CORRECT_FLOOR : 1;
 	uchar destination;
 	uchar direction;
+	int ELEVATOR_SHAFT;
 } P2;
-#define Air2	(sizeof(P2) - Offsetof(P2, direction) - 1*sizeof(uchar))
+#define Air2	(sizeof(P2) - Offsetof(P2, ELEVATOR_SHAFT) - 1*sizeof(int))
 
 #define Pelevator_engine	((P1 *)_this)
 typedef struct P1 { /* elevator_engine */
@@ -255,8 +265,9 @@ typedef struct P1 { /* elevator_engine */
 #ifdef HAS_PRIORITY
 	unsigned _priority : 8; /* 0..255 */
 #endif
+	int ELEVATOR_SHAFT;
 } P1;
-#define Air1	(sizeof(P1) - 3)
+#define Air1	(sizeof(P1) - Offsetof(P1, ELEVATOR_SHAFT) - 1*sizeof(int))
 
 #define Pcabin_door	((P0 *)_this)
 typedef struct P0 { /* cabin_door */
@@ -266,8 +277,9 @@ typedef struct P0 { /* cabin_door */
 #ifdef HAS_PRIORITY
 	unsigned _priority : 8; /* 0..255 */
 #endif
+	int ELEVATOR_SHAFT;
 } P0;
-#define Air0	(sizeof(P0) - 3)
+#define Air0	(sizeof(P0) - Offsetof(P0, ELEVATOR_SHAFT) - 1*sizeof(int))
 
 typedef struct P6 { /* np_ */
 	unsigned _pid : 8;  /* 0..255 */
@@ -469,16 +481,16 @@ typedef struct State {
 		unsigned short _event;
 	#endif
 #endif
-	uchar floor_request_made[2];
-	unsigned cabin_door_is_open : 1;
-	uchar current_floor;
+	uchar floor_request_made[4];
+	uchar current_floor[2];
 	uchar request;
-	uchar update_cabin_door;
-	uchar cabin_door_updated;
-	uchar move;
-	uchar floor_reached;
-	uchar go_to;
-	uchar served;
+	uchar update_cabin_door[2];
+	uchar cabin_door_updated[2];
+	uchar move[2];
+	uchar floor_reached[2];
+	uchar go_to[2];
+	uchar served[2];
+	struct door_array floor_door_is_open[2];
 #ifdef TRIX
 	/* room for 512 proc+chan ptrs, + safety margin */
 	char *_ids_[MAXPROC+MAXQ+4];
@@ -500,7 +512,11 @@ typedef struct TRIX_v6 {
 #endif
 
 #define HAS_TRACK	0
-/* hidden variable: */	uchar floor_door_is_open[2];
+/* hidden variable: */	uchar cabin_door_is_open[2];
+/* hidden variable: */	int i;
+/* hidden variable: */	int j;
+/* hidden variable: */	int elevatorsUsed;
+/* hidden variable: */	int k;
 #define FORWARD_MOVES	"pan.m"
 #define BACKWARD_MOVES	"pan.b"
 #define TRANSITIONS	"pan.t"
@@ -509,10 +525,10 @@ typedef struct TRIX_v6 {
 #define _endstate6	2 /* np_ */
 
 #define _start6	0 /* np_ */
-#define _start5	5
-#define _start4	7
-#define _start3	5
-#define _start2	49
+#define _start5	3
+#define _start4	11
+#define _start3	6
+#define _start2	1
 #define _start1	9
 #define _start0	11
 #ifdef NP
@@ -547,7 +563,49 @@ typedef struct TRIX_v6 {
 	#define MEMLIM	(2048)	/* need a default, using 2 GB */
 #endif
 #define PROG_LAB	0 /* progress labels */
-#define NQS	7
+#define NQS	13
+typedef struct Q13 {
+	uchar Qlen;	/* q_size */
+	uchar _t;	/* q_type */
+	struct {
+		uchar fld0;
+	} contents[1];
+} Q13;
+typedef struct Q12 {
+	uchar Qlen;	/* q_size */
+	uchar _t;	/* q_type */
+	struct {
+		uchar fld0;
+	} contents[1];
+} Q12;
+typedef struct Q11 {
+	uchar Qlen;	/* q_size */
+	uchar _t;	/* q_type */
+	struct {
+		uchar fld0;
+	} contents[1];
+} Q11;
+typedef struct Q10 {
+	uchar Qlen;	/* q_size */
+	uchar _t;	/* q_type */
+	struct {
+		uchar fld0;
+	} contents[1];
+} Q10;
+typedef struct Q9 {
+	uchar Qlen;	/* q_size */
+	uchar _t;	/* q_type */
+	struct {
+		uchar fld0;
+	} contents[1];
+} Q9;
+typedef struct Q8 {
+	uchar Qlen;	/* q_size */
+	uchar _t;	/* q_type */
+	struct {
+		uchar fld0;
+	} contents[1];
+} Q8;
 typedef struct Q7 {
 	uchar Qlen;	/* q_size */
 	uchar _t;	/* q_type */
@@ -595,7 +653,7 @@ typedef struct Q1 {
 	uchar _t;	/* q_type */
 	struct {
 		uchar fld0;
-	} contents[2];
+	} contents[4];
 } Q1;
 typedef struct Q0 {	/* generic q */
 	uchar Qlen;	/* q_size */
@@ -923,7 +981,7 @@ void qsend(int, int, int, int);
 #define GLOBAL	7
 #define BAD	8
 #define ALPHA_F	9
-#define NTRANS	58
+#define NTRANS	59
 #if defined(BFS_PAR) || NCORE>1
 	void e_critical(int);
 	void x_critical(int);
