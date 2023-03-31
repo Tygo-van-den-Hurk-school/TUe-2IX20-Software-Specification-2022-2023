@@ -9,7 +9,7 @@
 #define NUMBER_OF_FLOORS 2
 
 /** the number of elevators */
-#define NUMBER_OF_ELEVATORS 2
+#define NUMBER_OF_ELEVATORS 6
 
 /** IDs of the cabin door processes */
 #define CABIN_DOOR_ID (_pid)
