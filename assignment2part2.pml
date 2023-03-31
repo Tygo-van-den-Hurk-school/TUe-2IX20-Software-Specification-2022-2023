@@ -6,10 +6,10 @@
 //-------------------------------------------------------------------------------------------------
 
 /** the number of floors */
-#define NUMBER_OF_FLOORS 3
+#define NUMBER_OF_FLOORS 2
 
 /** the number of elevators */
-#define NUMBER_OF_ELEVATORS 3
+#define NUMBER_OF_ELEVATORS 2
 
 /** IDs of the cabin door processes */
 #define CABIN_DOOR_ID (_pid)
@@ -38,21 +38,6 @@
  */
 // ltl p2 { []<> (cabin_door_is_open==true) } 
 
-/** When a request is made at floor 1, then eventually the elevator reaches floor 1.*/
-// ltl a1 { [](floor_request_made[0] -> <>current_floor == 0)}
-
-/** When a request is made at floor 2, then eventually the elevator reaches floor 2.*/
-// ltl a2 { [](floor_request_made[1] -> <>current_floor == 1)}
-
-/** Always eventually the cabin doors open.*/
-// ltl b1 { []<>(cabin_door_is_open == true)}
-
-/** Always eventuall the cabin doors close. */
-// ltl b2 { []<>(cabin_door_is_open == false)}
-
-/** if the cabin door is open, then the doors at the current floor are also open. */
-// ltl c  { [](cabin_door_is_open == true -> floor_door_is_open[current_floor] == true)}
-
 /** A request always is for a valid floor, i.e., it has a value between 0 and N.
  * Handled with assert
  */
@@ -61,11 +46,11 @@
 /** When the request button of floor i is pressed, eventually, that request is processed.*/
 // int i;
 // int j;
-// ltl e { [](floor_request_made[i] -> <>(current_floor[j] == i))}
+// ltl e { [](floor_request_made[i] -> <>!floor_request_made[i])}
 
 /** Each elevvator eventually processes a request. */
-int elevatorsUsed;
-// ltl f { <>(elevatorsUsed == NUMBER_OF_ELEVATORS + 1)}
+int elevatorsUsed = 0;
+ltl f { <>(elevatorsUsed == NUMBER_OF_ELEVATORS)}
 
 /**
  * When an elevator signals that it has processed a request via the 'served' channel, its current
@@ -77,13 +62,6 @@ int elevatorsUsed;
 /** Eventually a request is made at floor number N-1. */
 // int k;
 // ltl h { <>(floor_request_made[NUMBER_OF_FLOORS - 1] == true)}
-
-/** all requirements at the same time */
-/* ltl all_requirements {
-    ( <>(floor_request_made[NUMBER_OF_FLOORS - 1] == true) ) // ltl h
-    && ( <>(elevatorsUsed == NUMBER_OF_ELEVATORS + 1) ) // ltl f
-    && ( [](floor_request_made[i] -> <>(current_floor[j] == i)) ) // ltl e
-} */
 
 //-------------------------------------------------------------------------------------------------
 
