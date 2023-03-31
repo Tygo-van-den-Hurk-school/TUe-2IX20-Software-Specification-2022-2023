@@ -35,12 +35,12 @@
 //ltl a2 { [](floor_request_made[2] -> <>current_floor == 2)}
 
 /**
- * always eventuall the cabin doors open.
+ * always eventually the cabin doors open.
  */
 //ltl b1 { []<>(cabin_door_is_open == true)}
 
 /**
- * always eventuall the cabin doors close.
+ * always eventually the cabin doors close.
  */
 ltl b2 { []<>(cabin_door_is_open == false)}
 
@@ -90,19 +90,23 @@ active proctype cabin_door() {
 
 	do
 	:: update_cabin_door?true -> {
-            floor_door_is_open[current_floor] = true;
-            cabin_door_is_open = true;
+            atomic {
+                floor_door_is_open[current_floor] = true;
+                cabin_door_is_open = true;
+            }
             cabin_door_updated!true;
         }
 	:: update_cabin_door?false -> {
-            cabin_door_is_open = false;
-            floor_door_is_open[current_floor] = false; 
+            atomic {
+                cabin_door_is_open = false;
+                floor_door_is_open[current_floor] = false; 
+            }
             cabin_door_updated!false;
         }
 	od;
 }
 
-/*
+/**
  * process combining the elevator engine and sensors
  */
 active proctype elevator_engine() {
@@ -119,6 +123,8 @@ active proctype elevator_engine() {
 
 /**
  * DUMMY main control process. Remodel it to control the doors and the engine!
+ *
+ * TODO rewrite discribtion
  */ 
 active proctype main_control() {
 
@@ -134,13 +140,15 @@ active proctype main_control() {
             do // This is the only way of making a sort of function that allows for an early return
             :: true -> { // it is just a while true loop that breaks at the end, or earlier
                     
-                    bool DESTINATION_IS_BELOW = (current_floor > destination);;
-                    bool DESTINATION_IS_ABOVE = (current_floor < destination);;
-                    if 
-                    :: DESTINATION_IS_BELOW -> direction = down;
-                    :: DESTINATION_IS_ABOVE -> direction = up;
-                    :: else -> break; // ! "early return" of the "function"
-                    fi;
+                    atomic {
+                        bool DESTINATION_IS_BELOW = (current_floor > destination);
+                        bool DESTINATION_IS_ABOVE = (current_floor < destination);
+                        if 
+                        :: DESTINATION_IS_BELOW -> direction = down;
+                        :: DESTINATION_IS_ABOVE -> direction = up;
+                        :: else -> break; // ! "early return" of the "function"
+                        fi;
+                    }
 
                     move!true;
 
@@ -167,16 +175,6 @@ active proctype main_control() {
             update_cabin_door!true;
             cabin_door_updated?true;
 
-            atomic { // an example assertion.
-                bool NON_NEGATIVE_CURRENT_FLOOR = (0 <= current_floor);
-                bool CABIN_NOT_ABOVE_EXISTING_FLOORS = (current_floor < NUMBER_OF_FLOORS);
-                bool CURRENT_FLOOR_WITHIN_BOUNDS = (
-                    NON_NEGATIVE_CURRENT_FLOOR && CABIN_NOT_ABOVE_EXISTING_FLOORS
-                );
-                assert(CURRENT_FLOOR_WITHIN_BOUNDS);
-            }
-
-
             floor_request_made[destination] = false;
             served!true;
         }
@@ -202,11 +200,20 @@ active proctype request_handler() {
  */
 active [NUMBER_OF_FLOORS] proctype request_button() {
 
+	atomic {
+        bool NON_NEGATIVE_CURRENT_FLOOR = (REQUEST_BUTTON_ID >= 0);
+        bool NOT_TOO_HIGH_CURRENT_FLOOR = (REQUEST_BUTTON_ID <= NUMBER_OF_FLOORS);
+        
+        bool CURRENT_FLOOR_WITHIN_BOUNDS = (
+            NON_NEGATIVE_CURRENT_FLOOR && NOT_TOO_HIGH_CURRENT_FLOOR
+        );
+
+        assert(CURRENT_FLOOR_WITHIN_BOUNDS); 
+    }
+
 	do
 	:: !floor_request_made[REQUEST_BUTTON_ID] -> {
 			atomic {
-				// TODO : Ask Rick about arrays
-				assert(0 <= REQUEST_BUTTON_ID && REQUEST_BUTTON_ID < NUMBER_OF_FLOORS);
 				request!REQUEST_BUTTON_ID;
 				floor_request_made[REQUEST_BUTTON_ID] = true;
 			}

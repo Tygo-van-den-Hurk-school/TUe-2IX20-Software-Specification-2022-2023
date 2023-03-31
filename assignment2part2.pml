@@ -2,12 +2,14 @@
  * Elevator template model for Assignment 2 of 2IX20 - Software Specification.
  * Set up for one elevator and two floors.
  */
+
 //-------------------------------------------------------------------------------------------------
+
 /** the number of floors */
-#define NUMBER_OF_FLOORS 4
+#define NUMBER_OF_FLOORS 3
 
 /** the number of elevators */
-#define NUMBER_OF_ELEVATORS 2
+#define NUMBER_OF_ELEVATORS 3
 
 /** IDs of the cabin door processes */
 #define CABIN_DOOR_ID (_pid)
@@ -25,56 +27,63 @@
 #define REQUEST_BUTTON_ID (MAIN_CONTROL_ID - NUMBER_OF_ELEVATORS - 1)
 
 //-------------------------------------------------------------------------------------------------
+// LTL formulas to be verified:
 
-// LTL formulas to be verified
 /** this property does not hold, as a request for floor 1 can be indefinitely postponed.*/
-//ltl p1 { []<> (floor_request_made[0]==true) } 
+// ltl p1 { []<> (floor_request_made[0]==true) } 
 
 /**
  * this property should hold, but does not yet; at any moment during an execution, the opening of
  * the cabin door will happen at some later point.
  */
-//ltl p2 { []<> (cabin_door_is_open==true) } 
+// ltl p2 { []<> (cabin_door_is_open==true) } 
 
 /** When a request is made at floor 1, then eventually the elevator reaches floor 1.*/
-//ltl a1 { [](floor_request_made[0] -> <>current_floor == 0)}
+// ltl a1 { [](floor_request_made[0] -> <>current_floor == 0)}
 
 /** When a request is made at floor 2, then eventually the elevator reaches floor 2.*/
-//ltl a2 { [](floor_request_made[1] -> <>current_floor == 1)}
+// ltl a2 { [](floor_request_made[1] -> <>current_floor == 1)}
 
 /** Always eventually the cabin doors open.*/
-//ltl b1 { []<>(cabin_door_is_open == true)}
+// ltl b1 { []<>(cabin_door_is_open == true)}
 
 /** Always eventuall the cabin doors close. */
-//ltl b2 { []<>(cabin_door_is_open == false)}
+// ltl b2 { []<>(cabin_door_is_open == false)}
 
 /** if the cabin door is open, then the doors at the current floor are also open. */
-//ltl c  { [](cabin_door_is_open == true -> floor_door_is_open[current_floor] == true)}
+// ltl c  { [](cabin_door_is_open == true -> floor_door_is_open[current_floor] == true)}
 
 /** A request always is for a valid floor, i.e., it has a value between 0 and N.
  * Handled with assert
  */
+// assert in process somewhere
 
 /** When the request button of floor i is pressed, eventually, that request is processed.*/
-int i
-int j
-//ltl e { [](floor_request_made[i] -> <>(current_floor[j] == i))}
+// int i;
+// int j;
+// ltl e { [](floor_request_made[i] -> <>(current_floor[j] == i))}
 
 /** Each elevvator eventually processes a request. */
-int elevatorsUsed
-//ltl f { <>(elevatorsUsed == NUMBER_OF_ELEVATORS + 1)}
-
+int elevatorsUsed;
+// ltl f { <>(elevatorsUsed == NUMBER_OF_ELEVATORS + 1)}
 
 /**
  * When an elevator signals that it has processed a request via the 'served' channel, its current
  * floor is equal to the destination floor of the request.
  * Handled with assert
  */
-
+// assert in process somewhere
 
 /** Eventually a request is made at floor number N-1. */
-int k
-ltl h { <>(floor_request_made[NUMBER_OF_FLOORS - 1] == true)}
+// int k;
+// ltl h { <>(floor_request_made[NUMBER_OF_FLOORS - 1] == true)}
+
+/** all requirements at the same time */
+/* ltl all_requirements {
+    ( <>(floor_request_made[NUMBER_OF_FLOORS - 1] == true) ) // ltl h
+    && ( <>(elevatorsUsed == NUMBER_OF_ELEVATORS + 1) ) // ltl f
+    && ( [](floor_request_made[i] -> <>(current_floor[j] == i)) ) // ltl e
+} */
 
 //-------------------------------------------------------------------------------------------------
 
@@ -87,11 +96,19 @@ chan request = [NUMBER_OF_FLOORS] of { byte };
 /** an array for the status of requests per floor */
 bool floor_request_made[NUMBER_OF_FLOORS]
 
-/** status of floor doors of the shaft of the single elevator */
-//bool floor_door_is_open[NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS];
+/** This is a component of the 2D array floor_door_is_open*/
 typedef door_array {
-    bool floor[NUMBER_OF_FLOORS];
+    bool floor[NUMBER_OF_FLOORS]; 
 };
+
+/** 
+ * status of floor doors of the shaft of the single elevator
+ *
+ * is equivalent to: floor_door_is_open[NUMBER_OF_ELEVATORS][NUMBER_OF_FLOORS]
+ * but it has to be done this way because promela does not support 2D array's.
+ * This is a work around where you make an array of a defintion of an array, 
+ * which is similar in use case, but different in creation.
+ */
 door_array floor_door_is_open[NUMBER_OF_ELEVATORS];
 
 /** wether or not the cabin door is open */
@@ -113,6 +130,7 @@ chan go_to[NUMBER_OF_ELEVATORS] = [1] of { byte };
 chan served[NUMBER_OF_ELEVATORS] = [1] of { bool };
 
 //-------------------------------------------------------------------------------------------------
+
 /**
  * cabin door process. Opens the door if update cabin door is true
  * on the channle update_cabin_door.
@@ -122,19 +140,23 @@ active [NUMBER_OF_ELEVATORS] proctype cabin_door() {
     int ELEVATOR_SHAFT = CABIN_DOOR_ID
 	do
 	:: update_cabin_door[ELEVATOR_SHAFT]?true -> {
-            floor_door_is_open[ELEVATOR_SHAFT].floor[current_floor[ELEVATOR_SHAFT]] = true;
-            cabin_door_is_open[ELEVATOR_SHAFT] = true;
-            cabin_door_updated[ELEVATOR_SHAFT]!true;
+            atomic {
+                floor_door_is_open[ELEVATOR_SHAFT].floor[current_floor[ELEVATOR_SHAFT]] = true;
+                cabin_door_is_open[ELEVATOR_SHAFT] = true;
+            }
+            cabin_door_updated[ELEVATOR_SHAFT]!true; // cannot move into atomic: syncronous
         }
 	:: update_cabin_door[ELEVATOR_SHAFT]?false -> {
-            cabin_door_is_open[ELEVATOR_SHAFT] = false;
-            floor_door_is_open[ELEVATOR_SHAFT].floor[current_floor[ELEVATOR_SHAFT]] = false; 
-            cabin_door_updated[ELEVATOR_SHAFT]!false;
+            atomic {
+                cabin_door_is_open[ELEVATOR_SHAFT] = false;
+                floor_door_is_open[ELEVATOR_SHAFT].floor[current_floor[ELEVATOR_SHAFT]] = false; 
+            }
+            cabin_door_updated[ELEVATOR_SHAFT]!false; // cannot move into atomic: syncronous
         }
 	od;
 }
 
-/*
+/**
  * process combining the elevator engine and sensors
  */
 active [NUMBER_OF_ELEVATORS] proctype elevator_engine() {
@@ -157,12 +179,13 @@ active [NUMBER_OF_ELEVATORS] proctype main_control() {
     
     int ELEVATOR_SHAFT = MAIN_CONTROL_ID;
     bool used = false;
-        
-    // makes it known that the elevator is avalible
-    served[ELEVATOR_SHAFT]!true; 
 
-	byte destination; 
-	mtype direction;
+    byte destination; 
+    mtype direction;
+
+    // makes it known that the elevator is available
+    served[ELEVATOR_SHAFT]!true;
+
 	do
 	:: true -> go_to[ELEVATOR_SHAFT]?destination -> {
 
@@ -174,13 +197,17 @@ active [NUMBER_OF_ELEVATORS] proctype main_control() {
             do // This is the only way of making a sort of function that allows for an early return
             :: true -> { // it is just a while true loop that breaks at the end, or earlier... ughh
                     
-                    bool DESTINATION_IS_BELOW = (current_floor[ELEVATOR_SHAFT] > destination);;
-                    bool DESTINATION_IS_ABOVE = (current_floor[ELEVATOR_SHAFT] < destination);;
-                    if 
-                    :: DESTINATION_IS_BELOW -> direction = down;
-                    :: DESTINATION_IS_ABOVE -> direction = up;
-                    :: else -> break; // ! "early return" of the "function"
-                    fi;
+                    atomic {
+
+                        bool DESTINATION_IS_BELOW = (current_floor[ELEVATOR_SHAFT] > destination);
+                        bool DESTINATION_IS_ABOVE = (current_floor[ELEVATOR_SHAFT] < destination);
+                        
+                        if 
+                        :: DESTINATION_IS_BELOW -> direction = down;
+                        :: DESTINATION_IS_ABOVE -> direction = up;
+                        :: else -> break; // ! "early return" of the "function"
+                        fi;
+                    }
 
                     move[ELEVATOR_SHAFT]!true;
 
@@ -195,8 +222,10 @@ active [NUMBER_OF_ELEVATORS] proctype main_control() {
                         } 
                     :: current_floor[ELEVATOR_SHAFT] == destination -> {
                             move[ELEVATOR_SHAFT]!false;
-                            direction = none;
-                            break;
+                            atomic {
+                                direction = none;
+                                break;
+                            }
                         }
                     od;
 
@@ -208,19 +237,23 @@ active [NUMBER_OF_ELEVATORS] proctype main_control() {
             update_cabin_door[ELEVATOR_SHAFT]!true;
             cabin_door_updated[ELEVATOR_SHAFT]?true;
             
+            // mark the request as done, and get ready for the next request
             floor_request_made[destination] = false;
             served[ELEVATOR_SHAFT]!true;
 
-            // this is an assertion for g.
-            bool CORRECT_FLOOR = (current_floor[ELEVATOR_SHAFT] == destination);
-            assert(CORRECT_FLOOR)
+            atomic { 
 
-            if // To keep track of all the elevators we've used.
-            :: !used -> {
-                    used = true;
-                    elevatorsUsed++;
-                }
-            fi;
+                bool AT_CORRECT_FLOOR = (current_floor[ELEVATOR_SHAFT] == destination);
+                assert(AT_CORRECT_FLOOR) // this is an assertion for g
+
+                if // To keep track of all the elevators we've used.
+                :: !used -> {
+                        used = true;
+                        elevatorsUsed++;
+                    }
+                :: else;
+                fi;
+            }
         }
 	od;
 }
@@ -231,7 +264,8 @@ active [NUMBER_OF_ELEVATORS] proctype main_control() {
 active proctype request_handler() {
 
     byte nextElevatorID = 0;
-	byte destination;
+    byte destination;
+
 	do
 	:: request?destination -> {
             served[nextElevatorID]?true;
@@ -246,24 +280,21 @@ active proctype request_handler() {
  */
 active [NUMBER_OF_FLOORS] proctype request_button() {
 
+    atomic { // this is an assertion for d.
+        bool NON_NEGATIVE_CURRENT_FLOOR = (REQUEST_BUTTON_ID >= 0);
+        bool NOT_TOO_HIGH_CURRENT_FLOOR = (REQUEST_BUTTON_ID <= NUMBER_OF_FLOORS);
+        
+        bool CURRENT_FLOOR_WITHIN_BOUNDS = (
+            NON_NEGATIVE_CURRENT_FLOOR && NOT_TOO_HIGH_CURRENT_FLOOR
+        );
+
+        assert(CURRENT_FLOOR_WITHIN_BOUNDS); 
+    }
+
 	do
-	:: !floor_request_made[REQUEST_BUTTON_ID] -> {
-			
-            atomic { // this is an assertion for d.
-                bool NON_NEGATIVE_CURRENT_FLOOR = (REQUEST_BUTTON_ID >= 0);
-                bool NOT_TOO_HIGH_CURRENT_FLOOR = (REQUEST_BUTTON_ID <= NUMBER_OF_FLOORS);
-                
-                bool CURRENT_FLOOR_WITHIN_BOUNDS = (
-                    NON_NEGATIVE_CURRENT_FLOOR && NOT_TOO_HIGH_CURRENT_FLOOR
-                );
-
-				assert(CURRENT_FLOOR_WITHIN_BOUNDS); 
-            }
-
-            atomic { 
-				request!REQUEST_BUTTON_ID;
-				floor_request_made[REQUEST_BUTTON_ID] = true;
-			}
+	:: !floor_request_made[REQUEST_BUTTON_ID] -> atomic {
+            request!REQUEST_BUTTON_ID;
+            floor_request_made[REQUEST_BUTTON_ID] = true;
 		}
 	od;
 }
