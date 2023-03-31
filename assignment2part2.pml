@@ -50,8 +50,8 @@
 
 /** Each elevvator eventually processes a request. */
 int elevatorsUsed = 0;
-//ltl g { <>(elevatorsUsed == NUMBER_OF_ELEVATORS)}
-//ltl hmmm { []elevatorsUsed == 0}
+//ltl f { <>(elevatorsUsed == NUMBER_OF_ELEVATORS)}
+
 /**
  * When an elevator signals that it has processed a request via the 'served' channel, its current
  * floor is equal to the destination floor of the request.
